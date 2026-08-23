@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF Flex Message - Excel Batch Generator</title>
+    <style>
+        :root {
+            --primary: #06C755;
+            --bg-color: #f4f6f8;
+            --panel-bg: #ffffff;
+            --border: #e1e4e8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+        }
+
+        .header {
+            background: var(--panel-bg);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .upload-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upload-section input[type="file"] {
+            font-size: 14px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: #05a044; }
+        
+        .btn-zip {
+            background: #D31145;
+        }
+        .btn-zip:hover {
+            background: #a80e37;
+        }
+
+        /* Grid for Previews */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 24px;
+        }
+
+        .preview-item {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            background: #2d2d2d;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-header h3 { margin: 0; font-size: 16px; }
+
+        .preview-box {
+            background-color: #eaeef1;
+            position: relative;
+            height: 550px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .carousel-preview {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            scrollbar-width: none;
+        }
+        .carousel-preview::-webkit-scrollbar { display: none; }
+
+        /* Bubble Preview CSS */
+        .bubble2 {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 300px;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .hero-img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+        .body-box { padding: 20px; display: flex; flex-direction: row; gap: 15px; }
+        .avatar-container { width: 56px; height: 56px; border-radius: 100px; overflow: hidden; flex-shrink: 0; }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .content-box { display: flex; flex-direction: column; }
+        .title-text { font-weight: bold; font-size: 13px; color: #000; }
+        .description-text { font-size: 14px; margin-top: 6px; line-height: 1.4; color: #000; }
+        .footer { padding: 0 20px 20px 20px; }
+        .btn-primary { background-color: #D31145; color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 13px; }
+        
+        .bubble-full-img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; }
+        .bubble-image-only { padding: 0; }
+
+        .fab-container-preview { position: sticky; bottom: 0px; left: 50%; display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 10; margin-top: auto; padding-top: 20px;}
+        .action-btn-preview { background: #06C755; color: white; border: none; border-radius: 999px; padding: 12px 16px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; width: 240px; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #777;
+            grid-column: 1 / -1;
+            background: #fff;
+            border-radius: 12px;
+            border: 2px dashed #ccc;
+        }
+    </style>
+    <!-- Include SheetJS & FileSaver & JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Batch HTML Generator (Excel to LIFF)</h2>
+        <div class="upload-section">
+            <input type="file" id="excelFile" accept=".xlsx, .xls">
+            <button class="btn btn-zip" id="downloadAllBtn" style="display:none;" onclick="downloadAll()">Download All (ZIP)</button>
+        </div>
+    </div>
+
+    <div class="preview-grid" id="previewGrid">
+        <div class="empty-state">
+            <h3>No Data Loaded</h3>
+            <p>Please upload the Excel template (e.g. 28Aug_template.xlsx) to view previews and generate HTML files.</p>
+        </div>
+    </div>
+
+    <script>
+        window.generatedData = [];
+
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                
+                processExcelData(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processExcelData(rows) {
+            window.generatedData = [];
+            const grid = document.getElementById('previewGrid');
+            grid.innerHTML = '';
+            
+            rows.forEach((row, index) => {
+                const modeStr = String(row['Select layout mode'] || '').toLowerCase();
+                const mode = modeStr.includes('2') ? '2' : '1';
+
+                const fab1ActStr = String(row['Button 1 Action'] || '').toLowerCase();
+                const fab1Action = fab1ActStr.includes('share') ? 'share' : 'link';
+                
+                const isBtn2Str = String(row['Is button 2?'] || '').toLowerCase();
+                const enableFab2 = (isBtn2Str === 'yes' || isBtn2Str === 'y' || isBtn2Str === 'true');
+                
+                const fab2ActStr = String(row['Button 2 Action'] || '').toLowerCase();
+                const fab2Action = fab2ActStr.includes('share') ? 'share' : 'link';
+
+                const config = {
+                    id: row['Content'] || (index + 1),
+                    mode: mode,
+                    liffId: String(row['Liff ID'] || '').trim(),
+                    
+                    fab1Label: row['Button 1 Label'] || '',
+                    fab1Action: fab1Action,
+                    fab1Link: row['Button 1 URL'] || '',
+                    
+                    enableFab2: enableFab2,
+                    fab2Label: row['Button 2 Label'] || '',
+                    fab2Action: fab2Action,
+                    fab2Link: row['Button 2 URL'] || '',
+                    
+                    heroImage: row['Hero Image URL'] || 'https://via.placeholder.com/600x338?text=No+Image',
+                    title: row['Title name'] || 'Agent Name',
+                    desc: row['Description text'] || 'Description',
+                    btnLabel: row['Button label'] || 'Click Here',
+                    btnLink: row['Button target URL'] || '#',
+                    
+                    card2Image: row['Card 2 URL'] || 'https://via.placeholder.com/600x800?text=Card+2'
+                };
+                
+                window.generatedData.push(config);
+                renderPreview(config, grid);
+            });
+
+            if (window.generatedData.length > 0) {
+                document.getElementById('downloadAllBtn').style.display = 'inline-block';
+            }
+        }
+
+        function renderPreview(cfg, container) {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            
+            let card2HTML = '';
+            if (cfg.mode === '2') {
+                card2HTML = `
+                <div class="bubble2">
+                    <div class="bubble-image-only">
+                        <img src="${cfg.card2Image}" class="bubble-full-img" alt="Card 2">
+                    </div>
+                </div>`;
+            }
+            
+            let fab2HTML = '';
+            if (cfg.enableFab2) {
+                fab2HTML = `
+                <button class="action-btn-preview">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" width="20" style="vertical-align:middle;margin-right:6px;">
+                    ${cfg.fab2Label}
+                </button>`;
+            }
+
+            const justify = cfg.mode === '1' ? 'center' : 'flex-start';
+
+            div.innerHTML = `
+                <div class="preview-header">
+                    <h3>Content ${cfg.id}</h3>
+                    <button class="btn" onclick="downloadSingle('${cfg.id}')">Download</button>
+                </div>
+                <div class="preview-box">
+                    <div class="carousel-preview" style="justify-content: ${justify};">
+                        <div class="bubble2">
+                            <img src="${cfg.heroImage}" class="hero-img">
+                            <div class="body-box">
+                                <div class="avatar-container">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2037/2037844.png" class="avatar-img">
+                                </div>
+                                <div class="content-box">
+                                    <span class="title-text">${cfg.title}</span>
+                                    <div class="description-text">${cfg.desc}</div>
+                                </div>
+                            </div>
+                            <div class="footer">
+                                <div class="btn-primary">${cfg.btnLabel}</div>
+                            </div>
+                        </div>
+                        ${card2HTML}
+                    </div>
+                    <div class="fab-container-preview">
+                        <button class="action-btn-preview">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" width="20" style="vertical-align:middle;margin-right:6px;">
+                            ${cfg.fab1Label}
+                        </button>
+                        ${fab2HTML}
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function generateHTMLCode(cfg) {
+            let flexCard2JSON = "";
+            let htmlCard2 = "";
+            if (cfg.mode === '2') {
+                flexCard2JSON = `,
+                    {
+                        "type": "bubble",
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "image",
+                                    "url": "${cfg.card2Image}",
+                                    "size": "full",
+                                    "aspectMode": "cover",
+                                    "aspectRatio": "3:4",
+                                    "gravity": "top"
+                                }
+                            ],
+                            "paddingAll": "0px"
+                        }
+                    }`;
+
+                htmlCard2 = `
+    <!-- Bubble 2 -->
+    <div class="bubble2">
+        <div class="bubble-image-only">
+            <img src="${cfg.card2Image}" class="bubble-full-img" alt="Image">
+        </div>
+    </div>`;
+            }
+
+            const getFabOnClick = (action, link) => {
+                return action === 'share' ? 'shareFlex()' : `window.open('${link}', '_blank');`;
+            };
+            
+            let genFabHTML = `
+    <button class="action-btn" onclick="${getFabOnClick(cfg.fab1Action, cfg.fab1Link)}">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="line-icon" alt="LINE">
+        ${cfg.fab1Label}
+    </button>`;
+            
+            if (cfg.enableFab2) {
+                genFabHTML += `
+    <button class="action-btn" onclick="${getFabOnClick(cfg.fab2Action, cfg.fab2Link)}">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="line-icon" alt="LINE">
+        ${cfg.fab2Label}
+    </button>`;
+            }
+
+            return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+    --line-bg: #eaeef1;
+    --bubble-bg: #ffffff;
+    --primary-red: #D31145;
+    --text-main: #000000;
+}
+* { box-sizing: border-box; }
+body {
+    background-color: var(--line-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 150px;
+}
+.carousel-container { display: flex; overflow-x: auto; overflow-y: hidden; width: 100%; padding: 20px; gap: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; ${cfg.mode === '1' ? 'justify-content: center;' : ''} }
+.carousel-container::-webkit-scrollbar { display: none; }
+.bubble2 { background: var(--bubble-bg); border-radius: 20px; width: 300px; flex-shrink: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.hero-img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+.body-box { padding: 20px; display: flex; flex-direction: row; gap: 15px; }
+.avatar-container { width: 72px; height: 72px; border-radius: 100px; overflow: hidden; flex-shrink: 0; }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.content-box { display: flex; flex-direction: column; }
+.title-text { font-weight: bold; font-size: 14px; color: var(--text-main); }
+.description-text { font-size: 16px; margin-top: 8px; line-height: 1.4; color: var(--text-main); }
+.footer { padding: 0 20px 20px 20px; }
+.btn-primary { background-color: var(--primary-red); color: white; text-align: center; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; display: block; font-size: 14px; }
+.bubble-full-img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; }
+.bubble-image-only { padding: 0; }
+.fab-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.action-btn { background: #06C755; color: white; border: none; border-radius: 999px; padding: 14px 18px; font-size: 15px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; width: 260px; }
+.action-btn:hover { transform: scale(1.05); }
+.line-icon{ width:30px; margin-right:6px; }
+</style>
+</head>
+<body>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"><\/script>
+
+<!-- Floating Buttons -->
+<div class="fab-container">${genFabHTML}
+</div>
+
+<!-- Carousel -->
+<div class="carousel-container">
+    <!-- Bubble 1 -->
+    <div class="bubble2">
+        <a href="${cfg.btnLink}" target="_blank">
+            <img src="${cfg.heroImage}" class="hero-img" alt="Hero">
+        </a>
+        <div class="body-box">
+            <div class="avatar-container">
+                <img src="https://cdn-icons-png.flaticon.com/512/2037/2037844.png" class="avatar-img" alt="Avatar">
+            </div>
+            <div class="content-box">
+                <span class="title-text">${cfg.title}</span>
+                <div class="description-text">${cfg.desc}</div>
+            </div>
+        </div>
+        <div class="footer">
+            <a href="${cfg.btnLink}" target="_blank" class="btn-primary">${cfg.btnLabel}</a>
+        </div>
+    </div>${htmlCard2}
+</div>
+
+<script>
+const LIFF_ID = "${cfg.liffId}";
+
+async function init() {
+    try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isInClient()) { console.log("Not inside LINE app"); return; }
+        if (!liff.isLoggedIn()) { liff.login(); }
+    } catch(err) { console.error(err); }
+}
+
+function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('referral')) { return \`referral=\${params.get('referral')}\`; }
+    const liffState = params.get('liff.state');
+    if (liffState) {
+        const decodedState = decodeURIComponent(liffState);
+        const innerParams = new URLSearchParams(decodedState);
+        const referral = innerParams.get('referral');
+        if (referral) { return \`referral=\${referral}\`; }
+    }
+    return "";
+}
+
+async function shareFlex() {
+    try {
+        const query = getQueryParams();
+        let targetUrl = "${cfg.btnLink}";
+        if(query) { targetUrl += (targetUrl.includes('?') ? '&' : '?') + query; }
+        
+        const profile = await liff.getProfile();
+
+        const flexMessage = {
+            type: "flex",
+            altText: "${cfg.desc}",
+            contents: {
+                type: "carousel",
+                contents: [
+                    {
+                        "type": "bubble",
+                        "hero": {
+                            "type": "image",
+                            "url": "${cfg.heroImage}",
+                            "size": "full",
+                            "aspectRatio": "16:9",
+                            "aspectMode": "cover",
+                            "action": { "type": "uri", "uri": targetUrl }
+                        },
+                        "body": {
+                            "type": "box",
+                            "layout": "horizontal",
+                            "contents": [
+                                {
+                                    "type": "box",
+                                    "layout": "vertical",
+                                    "contents": [{ "type": "image", "url": profile.pictureUrl, "aspectMode": "cover", "size": "full" }],
+                                    "cornerRadius": "100px", "width": "72px", "height": "72px"
+                                },
+                                {
+                                    "type": "box",
+                                    "layout": "vertical",
+                                    "contents": [
+                                        { "type": "text", "text": profile.displayName, "weight": "bold", "color": "#000000", "size": "sm", "wrap": true },
+                                        { "type": "text", "text": "${cfg.desc}", "wrap": true, "size": "md", "margin": "lg" }
+                                    ]
+                                }
+                            ],
+                            "spacing": "xl", "paddingAll": "20px"
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "button", "style": "primary", "color": "#D31145",
+                                    "action": { "type": "uri", "label": "${cfg.btnLabel}", "uri": targetUrl }
+                                }
+                            ]
+                        }
+                    }${flexCard2JSON}
+                ]
+            }
+        };
+
+        if (liff.isApiAvailable('shareTargetPicker')) {
+            await liff.shareTargetPicker([flexMessage]);
+        } else {
+            alert("ShareTargetPicker not supported");
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Share failed");
+    }
+}
+init();
+<\/script>
+</body>
+</html>`;
+        }
+
+        function downloadSingle(id) {
+            const cfg = window.generatedData.find(c => String(c.id) === String(id));
+            if (!cfg) return;
+            const html = generateHTMLCode(cfg);
+            const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+            saveAs(blob, `Content_${id}.html`);
+        }
+
+        function downloadAll() {
+            const zip = new JSZip();
+            window.generatedData.forEach(cfg => {
+                const html = generateHTMLCode(cfg);
+                zip.file(`Content_${cfg.id}.html`, html);
+            });
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "All_LIFF_Campaigns.zip");
+            });
+        }
+    </script>
+</body>
+</html>
