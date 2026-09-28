@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF Flex Message - Excel Batch Generator (V3 - Redesign)</title>
+    <title>LIFF Flex Message - Excel Batch Generator (V3 - Redesign Final)</title>
     <style>
         :root {
             --primary: #06C755;
@@ -119,6 +120,7 @@
         .badge { background: #eee; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; color: #555; }
         .badge.active { background: #e2fbe8; color: #06C755; }
     </style>
+    <!-- Include SheetJS & FileSaver & JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -126,7 +128,7 @@
 <body>
 
     <div class="header">
-        <h2>Batch HTML Generator (Redesign V3)</h2>
+        <h2>Batch HTML Generator (Redesign V3 Final)</h2>
         <div class="upload-section">
             <input type="file" id="excelFile" accept=".xlsx, .xls">
             <button class="btn btn-zip" id="downloadAllBtn" style="display:none;" onclick="downloadAll()">Download All (ZIP)</button>
@@ -216,7 +218,7 @@
             let card2HTML = '';
             if (cfg.mode === '2') {
                 card2HTML = `
-                <div class="single-card">
+                <div class="single-card" style="margin-left: 12px;">
                     <div class="bubble-image-only">
                         <img src="${cfg.card2Image}" class="bubble-full-img" alt="Card 2">
                     </div>
@@ -402,10 +404,9 @@
         </div>
     </div>`;
             } else {
-                flexPayloadJSON = flexBubble1JSON; // Just single bubble
+                flexPayloadJSON = flexBubble1JSON;
             }
             
-            // Build AIO Menu HTML conditionally
             let aioMenuHTML = '';
             if (cfg.aioUrl && cfg.aioUrl !== '') {
                 aioMenuHTML = `
@@ -723,13 +724,13 @@ function copyShareLink() {
 
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
-    if (params.has('referral')) { return \`referral=\\${params.get('referral')}\`; }
+    if (params.has('referral')) { return \`referral=\${params.get('referral')}\`; }
     const liffState = params.get('liff.state');
     if (liffState) {
         const decodedState = decodeURIComponent(liffState);
         const innerParams = new URLSearchParams(decodedState);
         const referral = innerParams.get('referral');
-        if (referral) { return \`referral=\\${referral}\`; }
+        if (referral) { return \`referral=\${referral}\`; }
     }
     return "";
 }
