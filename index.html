@@ -766,7 +766,7 @@ async function shareFlex() {
 init();
 <\/script>
 </body>
-</html>\`;
+</html>`;
         }
 
         function downloadSingle(id) {
@@ -774,14 +774,14 @@ init();
             if (!cfg) return;
             const html = generateHTMLCode(cfg);
             const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-            saveAs(blob, `Content_${id}.html`);
+            saveAs(blob, "Content_" + id + ".html");
         }
 
         function downloadAll() {
             const zip = new JSZip();
             window.generatedData.forEach(cfg => {
                 const html = generateHTMLCode(cfg);
-                zip.file(`Content_${cfg.id}.html`, html);
+                zip.file("Content_" + cfg.id + ".html", html);
             });
             zip.generateAsync({type:"blob"}).then(function(content) {
                 saveAs(content, "All_LIFF_Campaigns.zip");
